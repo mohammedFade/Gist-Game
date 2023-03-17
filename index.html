@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Coming Soon</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <style>
+      body {
+  background-color: #f2f2f2;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  width: 80%;
+  margin: auto;
+  text-align: center;
+  padding-top: 100px;
+}
+
+h1 {
+  font-size: 48px;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+p {
+  font-size: 24px;
+  color: #666;
+  margin-bottom: 40px;
+}
+
+#countdown {
+  font-size: 48px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 40px;
+}
+
+input[type="email"] {
+  padding: 10px;
+  border: none;
+  border-radius: 20px;
+  margin-right: 10px;
+  width: 300px;
+}
+
+button[type="submit"] {
+  padding: 10px 20px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+}
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Coming Soon</h1>
+      <p>Our website is under construction. Please check back soon!</p>
+      <div id="countdown"></div>
+      <form>
+        <input type="email" placeholder="Enter your email address">
+        <button type="submit">Subscribe</button>
+      </form>
+    </div>
+    <script>
+      
+const countdown = document.getElementById('countdown');
+
+const launchDate = new Date('2023-04-01T00:00:00').getTime();
+
+const interval = setInterval(() => {
+  const now = new Date().getTime();
+  const distance = launchDate - now;
+
+  const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  countdown.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+
+  if (distance < 0) {
+    clearInterval(interval);
+    countdown.innerHTML = 'EXPIRED';
+  }
+}, 1000);
+    </script>
+  </body>
+</html>
