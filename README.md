@@ -1,2 +1,2 @@
-# Soon
-## Created by GPT-3
+# Gist Game
+## Created by javaScript only
