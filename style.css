@@ -1,0 +1,14 @@
+body {
+    background-color: #eeeeee;
+}
+
+footer {
+    position: absolute;
+    bottom: 0;
+    width: 100vw;
+}
+
+/* Reset the bootstrap style */
+.btn-info {
+    color: #fff;
+}
