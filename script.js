@@ -1,7 +1,7 @@
 'use strict';
       let gist = Math.trunc(Math.random() * 30 + 1);
       let score = 30;
-      
+    
       document.querySelector('.chack').addEventListener('click', function () {
           const number = Number(document.querySelector('.number').value);
           const gisting = document.querySelector('.gisting');
