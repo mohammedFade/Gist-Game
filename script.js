@@ -1,11 +1,11 @@
 'use strict';
       let gist = Math.trunc(Math.random() * 30 + 1);
       let score = 30;
-    
+      let hiscore = 0;
       document.querySelector('.chack').addEventListener('click', function () {
           const number = Number(document.querySelector('.number').value);
           const gisting = document.querySelector('.gisting');
-          let hiscore = 0;
+          
           console.log(number);
           if (!number || number == 0) {
               gisting.textContent = '🙍‍♂️ دا ما رقم لاكن';
