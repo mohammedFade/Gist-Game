@@ -17,7 +17,7 @@ document.querySelector('.chack').addEventListener('click', function () {
         score--;
     } else if (number == gist) {
         // When You Win
-        gisting.textContent = '🎉 باااس قرض على كدا';
+        gisting.textContent = 'بحب ToTa 😉 ارعو لي اعرسها 😊 🎉 باااس قرض على كدا';
         document.querySelector('body').style.backgroundColor = '#e8f5e9';
         document.querySelector('.cog').textContent = gist;
         if (score > hiscore) {
