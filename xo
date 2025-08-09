@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>لعبة إكس-أو — باللهجة السودانية 😄</title>
+
+  <!-- Tailwind CDN (مناسب للملفات الثابتة الصغيرة) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- خط عربي جميل -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+    .square-w { width: 5.5rem; height: 5.5rem; }
+    @media(min-width: 768px) { .square-w { width: 6.5rem; height: 6.5rem; } }
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-yellow-50 to-white dark:from-gray-900 dark:to-black text-gray-900 dark:text-gray-100 p-6 flex items-center justify-center">
+  <main class="w-full max-w-3xl">
+    <h1 class="text-3xl font-extrabold mb-6 text-center">لعبة إكس — أو (بالسوداني) 🎲</h1>
+
+    <div id="app" class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6">
+      <div class="flex flex-col md:flex-row gap-6">
+        <section class="flex-1">
+          <!-- لوحة اللعب -->
+          <div id="board" class="grid grid-rows-3 gap-3"></div>
+
+          <!-- الحالة -->
+          <div class="mt-4 flex items-center gap-4">
+            <div id="status" class="text-sm font-semibold">... جايين نبدأ</div>
+            <button id="restartBtn" class="mr-auto bg-emerald-500 text-white px-3 py-1 rounded-md hover:bg-emerald-600 focus:outline-none focus:ring">أعيدها ↺</button>
+            <button id="aiBtn" class="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring">العب مع الكمبيوتر (ساهل)</button>
+          </div>
+        </section>
+
+        <aside class="w-full md:w-64">
+          <h3 class="text-sm font-semibold mb-2">سجل الحركات</h3>
+          <ol id="historyList" class="flex flex-col gap-2 max-h-64 overflow-auto"></ol>
+
+          <div class="mt-4 text-xs text-gray-600 dark:text-gray-400">
+            تعابير سودانية مرحة أثناء اللعب — لو عايز لهجة تانية أعدلها ليك.
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <footer class="mt-6 text-center text-xs text-gray-500">
+      احفظ هذا الملف كـ <code>index.html</code> وارفعه لاستضافة ثابتة — جاهز!
+    </footer>
+  </main>
+
+<script>
+/* لعبة إكس-أو (ملف واحد) — عبارات باللهجة السودانية مرحة */
+
+// حالة اللعبة
+let history = [Array(9).fill('')];
+let step = 0;
+let xIsNext = true;
+let winnerInfo = { winner: '', line: null };
+let playAgainstAI = false;
+
+// عبارات باللهجة السودانية
+const funnyNextX = [
+  "يا زول، دورك يا X — ورّينا لعبك! 😎",
+  "قوم يا X، دخل السكة خلاص!",
+  "X عامل زي الصيّاد — دقّها يا معلم!"
+];
+
+const funnyNextO = [
+  "يا O، قوم ورّينا الخير 😂",
+  "O جاي يدوّرها — خلّينا نشوف!",
+  "يا أوبا O، خش الحيطة وادخلها!"
+];
+
+const funnyWinner = [
+  "أها! الفايز: {w} — البركة فيهو! 🎉",
+  "يا سلام، {w} كسبها من غير لعب كتير ☕️",
+  "{w} نجم الماتش — شوفوا الدايرة! ✨"
+];
+
+const funnyDraw = [
+  "تعادلنا يا جماعة — الشاي علينا 😅",
+  "ماشي الحال، تعادل حلو! نعيدها؟",
+  "نص ونص — لعبتوا كويسين!"
+];
+
+// DOM عناصر
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const historyListEl = document.getElementById('historyList');
+const restartBtn = document.getElementById('restartBtn');
+const aiBtn = document.getElementById('aiBtn');
+
+// إنشاء شبكة المربعات
+function createBoardButtons() {
+  boardEl.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'square-w flex items-center justify-center text-3xl font-extrabold rounded-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 bg-gray-100 hover:scale-[1.03] transition-transform';
+    btn.setAttribute('data-i', i);
+    btn.setAttribute('aria-label', `مربع ${i+1}`);
+    btn.addEventListener('click', () => handleClick(i));
+    boardEl.appendChild(btn);
+  }
+}
+
+// حساب الفائز
+function calculateWinner(sq) {
+  const lines = [
+    [0,1,2],[3,4,5],[6,7,8],
+    [0,3,6],[1,4,7],[2,5,8],
+    [0,4,8],[2,4,6]
+  ];
+  for (const [a,b,c] of lines) {
+    if (sq[a] && sq[a] === sq[b] && sq[a] === sq[c]) {
+      return { winner: sq[a], line: [a,b,c] };
+    }
+  }
+  return { winner: '', line: null };
+}
+
+// عرض الحالة وواجهات
+function render() {
+  const current = history[step];
+  const buttons = boardEl.querySelectorAll('button');
+  buttons.forEach((btn, i) => {
+    btn.textContent = current[i];
+    btn.classList.remove('bg-yellow-300', 'dark:bg-yellow-600', 'animate-pulse', 'text-green-800', 'text-red-700');
+    if (winnerInfo.line && winnerInfo.line.includes(i)) {
+      btn.classList.add('bg-yellow-300', 'animate-pulse');
+      if (winnerInfo.winner === 'X') btn.classList.add('text-red-700');
+      else btn.classList.add('text-green-800');
+    } else {
+      if (!current[i]) {
+        btn.classList.add('bg-gray-100');
+      }
+    }
+  });
+
+  // الحالة النصية باللهجة السودانية
+  let status = "";
+  if (winnerInfo.winner) {
+    const raw = funnyWinner[step % funnyWinner.length];
+    const wName = winnerInfo.winner === 'X' ? 'إكس (X)' : 'أو (O)';
+    status = raw.replace("{w}", wName);
+  } else if (current.every(Boolean)) {
+    status = funnyDraw[step % funnyDraw.length];
+  } else {
+    status = xIsNext ? funnyNextX[step % funnyNextX.length] : funnyNextO[step % funnyNextO.length];
+  }
+  statusEl.textContent = status;
+
+  // سجل الحركات
+  historyListEl.innerHTML = '';
+  history.forEach((_, move) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = `text-sm px-3 py-1 rounded-md focus:outline-none focus:ring ${move === step ? 'bg-yellow-100' : 'hover:bg-gray-100'}`;
+    btn.textContent = move ? `ارجع للحركة رقم ${move}` : 'ارجع لبداية اللعبة';
+    btn.addEventListener('click', () => jumpTo(move));
+    li.appendChild(btn);
+    historyListEl.appendChild(li);
+  });
+}
+
+// التعامل مع الضغط على مربع
+function handleClick(i) {
+  const current = history[step];
+  if (winnerInfo.winner || current[i]) return;
+
+  const newSquares = current.slice();
+  newSquares[i] = xIsNext ? 'X' : 'O';
+  history = history.slice(0, step + 1).concat([newSquares]);
+  step = history.length - 1;
+  xIsNext = !xIsNext;
+  winnerInfo = calculateWinner(history[step]);
+  render();
+
+  // لو مفعل اللعب ضد الكمبيوتر و دور الكمبيوتر الآن -> حركة AI
+  if (playAgainstAI && !winnerInfo.winner && !xIsNext) {
+    setTimeout(() => aiMove(), 300);
+  }
+}
+
+// العودة إلى حركة سابقة
+function jumpTo(move) {
+  step = move;
+  xIsNext = (step % 2 === 0);
+  winnerInfo = calculateWinner(history[step]);
+  render();
+}
+
+// إعادة اللعب
+function restart() {
+  history = [Array(9).fill('')];
+  step = 0;
+  xIsNext = true;
+  winnerInfo = {winner: '', line: null};
+  render();
+}
+
+// حركة بسيطة للـ AI (يحاول يفوز أو يصدّ X، وإلا يلعب منتصف أو ركن أو عشوائي)
+function aiMove() {
+  const current = history[step].slice();
+  const emptyIndexes = current.map((v,i)=>v?null:i).filter(v=>v!==null);
+
+  function findWinningMove(sym) {
+    for (const idx of emptyIndexes) {
+      const tmp = current.slice();
+      tmp[idx] = sym;
+      const calc = calculateWinner(tmp);
+      if (calc.winner === sym) return idx;
+    }
+    return null;
+  }
+
+  let move = findWinningMove('O');    // حاول يفوز
+  if (move === null) move = findWinningMove('X'); // امنع X
+  if (move === null && current[4] === '') move = 4; // خذ النص
+  const corners = [0,2,6,8].filter(i=>current[i]==='');
+  if (move === null && corners.length) move = corners[Math.floor(Math.random()*corners.length)];
+  if (move === null && emptyIndexes.length) move = emptyIndexes[Math.floor(Math.random()*emptyIndexes.length)];
+
+  if (move !== null) {
+    handleClick(move);
+  }
+}
+
+// تهيئة الواجهة
+createBoardButtons();
+render();
+
+// أحداث الأزرار
+restartBtn.addEventListener('click', restart);
+aiBtn.addEventListener('click', () => {
+  playAgainstAI = !playAgainstAI;
+  aiBtn.textContent = playAgainstAI ? 'أوقف الكمبيوتر' : 'العب مع الكمبيوتر (ساهل)';
+  // لو فعلناه ودور الكمبيوتر الآن نفّذ حركة
+  if (playAgainstAI && !xIsNext && !winnerInfo.winner) setTimeout(aiMove, 300);
+});
+
+// اختصارات: Ctrl/Cmd+Z للتراجع خطوة
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    if (step > 0) jumpTo(step - 1);
+  }
+});
+</script>
+</body>
+</html>
