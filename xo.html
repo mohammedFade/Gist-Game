@@ -1,254 +1,639 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
+
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>لعبة إكس-أو — باللهجة السودانية 😄</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>لعبة إكس-أو — بالسوداني</title>
 
-  <!-- Tailwind CDN (مناسب للملفات الثابتة الصغيرة) -->
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- خط عربي جميل -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-    .square-w { width: 5.5rem; height: 5.5rem; }
-    @media(min-width: 768px) { .square-w { width: 6.5rem; height: 6.5rem; } }
+    :root {
+      --bg: #f7f4ef;
+      --board-bg: #e6d9c6;
+      --square-bg: #fffaf3;
+      --sq-size: clamp(68px, 20vw, 110px);
+      --gap: clamp(8px, 2.5vw, 16px);
+      --xo-dark: #8A2BE2;
+      --accent: #8A2BE2;
+    }
+
+    html,
+    body,
+    #app {
+      height: 100%
+    }
+
+    body {
+      font-family: 'Cairo', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+      background: linear-gradient(180deg, #fffefc 0%, #f4f1ea 60%);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .board-wrapper {
+      background: linear-gradient(180deg, rgba(236, 219, 185, 1) 0%, rgba(224, 194, 139, 1) 100%);
+      border-radius: 18px;
+      padding: clamp(12px, 2.5vw, 20px);
+      box-shadow: 0 10px 30px rgba(11, 17, 32, 0.12), inset 0 2px 0 rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(11, 17, 32, 0.06);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, var(--sq-size));
+      grid-template-rows: repeat(3, var(--sq-size));
+      gap: var(--gap);
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(255, 255, 255, 0.02));
+      padding: calc(var(--gap));
+      border-radius: 12px;
+    }
+
+    .square {
+      width: var(--sq-size);
+      height: var(--sq-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--square-bg), #f7f3ea);
+      box-shadow:
+        0 6px 12px rgba(11, 17, 32, 0.12),
+        inset 0 6px 10px rgba(0, 0, 0, 0.04),
+        inset 0 -6px 8px rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(11, 17, 32, 0.06);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      transition: transform .12s ease, box-shadow .12s ease;
+      border: 1px solid #9400D3;
+      box-shadow: 0 0 4px #8A2BE2 ;
+    }
+
+    .square:active,
+    .square.pressed {
+      transform: translateY(4px) scale(0.99);
+      box-shadow:
+        0 3px 6px rgba(11, 17, 32, 0.14),
+        inset 0 3px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .xo {
+      width: 72%;
+      height: 72%;
+      display: block;
+    }
+
+    .x-line {
+      stroke: var(--xo-dark);
+      stroke-width: 10;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .o-ring {
+      stroke: var(--xo-dark);
+      stroke-width: 10;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .placed {
+      animation: pop .12s ease;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(.88);
+        opacity: .0;
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .winning {
+      box-shadow: 0 0 18px rgba(217, 119, 6, 0.45), inset 0 6px 20px rgba(255, 255, 255, 0.35);
+      transform: translateY(-2px) scale(1.02);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      background: white;
+      border: 1px solid rgba(11, 17, 32, 0.06);
+      box-shadow: 0 6px 12px rgba(11, 17, 32, 0.06);
+    }
+
+    .btn.primary {
+      background: linear-gradient(180deg, var(--accent), #b4099d);
+      color: white;
+      border: none;
+      box-shadow: 0 8px 18px rgba(180, 83, 9, 0.22);
+    }
+
+    .history {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      max-height: 220px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .history button {
+      text-align: right;
+      padding: 6px 8px;
+      border-radius: 8px;
+      color: var(--accent);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(11, 17, 32, 0.04);
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 12px;
+      font-weight: 800;
+      font-size: 1.28rem;
+    }
+
+    main {
+      height: calc(100%-40px);
+    }
+
+    footer {
+      position: fixed;
+      width: 100%;
+      height: 60px;
+      bottom: 0;
+      text-align: center;
+      padding-top: 12px;
+      background: linear-gradient(180deg, var(--accent), #b4099d);
+      color: white;
+      border: none;
+    }
+/* Define the keyframes for the color animation */
+@keyframes color-change {
+  0% {
+    color: #007bff; /* Start with a vibrant blue */
+  }
+  50% {
+    color: #6a0572; /* Transition to a rich violet at 50% of the animation */
+  }
+  100% {
+    color: #007bff; /* Return to the starting blue at 100% */
+  }
+}
+
+/* Apply the animation to the footer link */
+footer a {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-decoration: none;
+
+  /* Apply the animation */
+  animation: color-change 4s infinite alternate;
+}
+
+
+
+    @media (max-width:420px) {
+      :root {
+        --sq-size: clamp(64px, 26vw, 96px);
+        --gap: 10px;
+      }
+
+      .title {
+        font-size: 1.15rem;
+      }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background: linear-gradient(180deg, #0b1220 0%, #07101a 60%);
+        color: #e6eef7;
+      }
+
+      .board-wrapper {
+        background: linear-gradient(180deg, #111827, #0b1220);
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+      }
+
+      .square {
+        background: linear-gradient(180deg, #0f1724, #0b1220);
+        box-shadow: 0 8px 22px rgba(2, 6, 23, 0.6), inset 0 4px 12px rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.02);
+      }
+
+      .btn {
+        background: #0b1220;
+        color: #e6eef7;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+
+      .btn.primary {
+        background: linear-gradient(180deg, #b45309, #92400e);
+      }
+
+      .square .xo {
+        filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.45));
+      }
+    }
   </style>
 </head>
-<body class="min-h-screen bg-gradient-to-b from-yellow-50 to-white dark:from-gray-900 dark:to-black text-gray-900 dark:text-gray-100 p-6 flex items-center justify-center">
-  <main class="w-full max-w-3xl">
-    <h1 class="text-3xl font-extrabold mb-6 text-center">لعبة إكس — أو (بالسوداني) 🎲</h1>
 
-    <div id="app" class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6">
-      <div class="flex flex-col md:flex-row gap-6">
-        <section class="flex-1">
-          <!-- لوحة اللعب -->
-          <div id="board" class="grid grid-rows-3 gap-3"></div>
+<body>
+  <main class="w-full max-w-md">
+    <h1 class="title">لعبة إكس أو ❌-⭕ [ مع فردك أو الكمبيوتر ]</h1>
 
-          <!-- الحالة -->
-          <div class="mt-4 flex items-center gap-4">
-            <div id="status" class="text-sm font-semibold">... جايين نبدأ</div>
-            <button id="restartBtn" class="mr-auto bg-emerald-500 text-white px-3 py-1 rounded-md hover:bg-emerald-600 focus:outline-none focus:ring">أعيدها ↺</button>
-            <button id="aiBtn" class="bg-indigo-600 text-white px-3 py-1 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring">العب مع الكمبيوتر (ساهل)</button>
-          </div>
-        </section>
+    <div class="board-wrapper">
+      <div id="board" class="board" aria-label="لوحة لعبة إكس أو"></div>
 
-        <aside class="w-full md:w-64">
-          <h3 class="text-sm font-semibold mb-2">سجل الحركات</h3>
-          <ol id="historyList" class="flex flex-col gap-2 max-h-64 overflow-auto"></ol>
+      <div class="controls mt-4">
+        <div id="status" class="text-sm font-semibold">يا زول، خلّنا نبدأ</div>
+        <button id="restartBtn" class="btn ml-auto" aria-label="إعادة">ألعب تاني ↺</button>
+        <button id="aiBtn" class="btn primary" aria-pressed="true">أوقف الكمبيوتر</button>
+        <button id="soundBtn" class="btn" aria-pressed="true">صوت: شغّال</button>
+      </div>
 
-          <div class="mt-4 text-xs text-gray-600 dark:text-gray-400">
-            تعابير سودانية مرحة أثناء اللعب — لو عايز لهجة تانية أعدلها ليك.
-          </div>
-        </aside>
+      <div class="history-section mt-3">
+        <h4 class="text-sm font-semibold mt-3">سجل الحركات</h4>
+        <div id="historyList" class="history"></div>
       </div>
     </div>
 
-    <footer class="mt-6 text-center text-xs text-gray-500">
-      احفظ هذا الملف كـ <code>index.html</code> وارفعه لاستضافة ثابتة — جاهز!
-    </footer>
   </main>
 
-<script>
-/* لعبة إكس-أو (ملف واحد) — عبارات باللهجة السودانية مرحة */
+  <footer>هوي الكود دا حق <a href="https://mohammedfade.github.io/Mohammed-Fadi/">فادي</a> اوعك تجازفو
+  🧑‍💻</footer>
 
-// حالة اللعبة
-let history = [Array(9).fill('')];
-let step = 0;
-let xIsNext = true;
-let winnerInfo = { winner: '', line: null };
-let playAgainstAI = false;
+  <script>
+    let history = [Array(9).fill('')];
+    let step = 0;
+    let xIsNext = true;
+    let winnerInfo = { winner: '', line: null };
+    let playAgainstAI = true;
+    let soundsEnabled = true;
+    let audioCtx = null;
+    let ttsVoice = null;
 
-// عبارات باللهجة السودانية
-const funnyNextX = [
-  "يا زول، دورك يا X — ورّينا لعبك! 😎",
-  "قوم يا X، دخل السكة خلاص!",
-  "X عامل زي الصيّاد — دقّها يا معلم!"
-];
+    const funnyNextX = [
+      "يا زول، دورك يا X — ورّينا لعبك! 😎",
+      "شغل بخخخخخخخختلف يا سعادتك🫡",
+       "دنيا زاااايلي ونعيمكي زاايل 😶‍🌫️"
+    ];
 
-const funnyNextO = [
-  "يا O، قوم ورّينا الخير 😂",
-  "O جاي يدوّرها — خلّينا نشوف!",
-  "يا أوبا O، خش الحيطة وادخلها!"
-];
+    const funnyNextO = [
+      "اسي دا لعب لييك مع الناس 🙄",
+      "ازنق ام كعوووك لمن يجيب الزيت🤣",
+      "يا أوبا O، خش الحيطة وادخلها!"
+    ];
 
-const funnyWinner = [
-  "أها! الفايز: {w} — البركة فيهو! 🎉",
-  "يا سلام، {w} كسبها من غير لعب كتير ☕️",
-  "{w} نجم الماتش — شوفوا الدايرة! ✨"
-];
+    const funnyWinner = [
+      "أها! الفايز: {w} — البركة فيهو! 🎉",
+      "يا سلام، {w} كسبها من غير لعب كتير ☕️",
+      "{w} نجم الماتش — شوفوا الدايرة! ✨"
+    ];
 
-const funnyDraw = [
-  "تعادلنا يا جماعة — الشاي علينا 😅",
-  "ماشي الحال، تعادل حلو! نعيدها؟",
-  "نص ونص — لعبتوا كويسين!"
-];
+    const funnyDraw = [
+      "ما عندنا تعادل تلعبو لممن واحد يتبلة 😏",
+      "ماشي الحال، تعادل حلو! نعيدها؟",
+      "نص ونص — لعبتوا كويسين!"
+    ];
 
-// DOM عناصر
-const boardEl = document.getElementById('board');
-const statusEl = document.getElementById('status');
-const historyListEl = document.getElementById('historyList');
-const restartBtn = document.getElementById('restartBtn');
-const aiBtn = document.getElementById('aiBtn');
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+    const historyListEl = document.getElementById('historyList');
+    const restartBtn = document.getElementById('restartBtn');
+    const aiBtn = document.getElementById('aiBtn');
+    const soundBtn = document.getElementById('soundBtn');
 
-// إنشاء شبكة المربعات
-function createBoardButtons() {
-  boardEl.innerHTML = '';
-  for (let i = 0; i < 9; i++) {
-    const btn = document.createElement('button');
-    btn.className = 'square-w flex items-center justify-center text-3xl font-extrabold rounded-lg focus:outline-none focus:ring-4 focus:ring-yellow-300 bg-gray-100 hover:scale-[1.03] transition-transform';
-    btn.setAttribute('data-i', i);
-    btn.setAttribute('aria-label', `مربع ${i+1}`);
-    btn.addEventListener('click', () => handleClick(i));
-    boardEl.appendChild(btn);
-  }
-}
-
-// حساب الفائز
-function calculateWinner(sq) {
-  const lines = [
-    [0,1,2],[3,4,5],[6,7,8],
-    [0,3,6],[1,4,7],[2,5,8],
-    [0,4,8],[2,4,6]
-  ];
-  for (const [a,b,c] of lines) {
-    if (sq[a] && sq[a] === sq[b] && sq[a] === sq[c]) {
-      return { winner: sq[a], line: [a,b,c] };
-    }
-  }
-  return { winner: '', line: null };
-}
-
-// عرض الحالة وواجهات
-function render() {
-  const current = history[step];
-  const buttons = boardEl.querySelectorAll('button');
-  buttons.forEach((btn, i) => {
-    btn.textContent = current[i];
-    btn.classList.remove('bg-yellow-300', 'dark:bg-yellow-600', 'animate-pulse', 'text-green-800', 'text-red-700');
-    if (winnerInfo.line && winnerInfo.line.includes(i)) {
-      btn.classList.add('bg-yellow-300', 'animate-pulse');
-      if (winnerInfo.winner === 'X') btn.classList.add('text-red-700');
-      else btn.classList.add('text-green-800');
-    } else {
-      if (!current[i]) {
-        btn.classList.add('bg-gray-100');
+    function ensureAudio() {
+      if (audioCtx) return;
+      try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        audioCtx = null;
       }
     }
-  });
 
-  // الحالة النصية باللهجة السودانية
-  let status = "";
-  if (winnerInfo.winner) {
-    const raw = funnyWinner[step % funnyWinner.length];
-    const wName = winnerInfo.winner === 'X' ? 'إكس (X)' : 'أو (O)';
-    status = raw.replace("{w}", wName);
-  } else if (current.every(Boolean)) {
-    status = funnyDraw[step % funnyDraw.length];
-  } else {
-    status = xIsNext ? funnyNextX[step % funnyNextX.length] : funnyNextO[step % funnyNextO.length];
-  }
-  statusEl.textContent = status;
+    /* percussive click using filtered noise */
+    function playMoveSound() {
+      if (!soundsEnabled) return;
+      ensureAudio();
+      if (!audioCtx) return;
 
-  // سجل الحركات
-  historyListEl.innerHTML = '';
-  history.forEach((_, move) => {
-    const li = document.createElement('li');
-    const btn = document.createElement('button');
-    btn.className = `text-sm px-3 py-1 rounded-md focus:outline-none focus:ring ${move === step ? 'bg-yellow-100' : 'hover:bg-gray-100'}`;
-    btn.textContent = move ? `ارجع للحركة رقم ${move}` : 'ارجع لبداية اللعبة';
-    btn.addEventListener('click', () => jumpTo(move));
-    li.appendChild(btn);
-    historyListEl.appendChild(li);
-  });
-}
+      const now = audioCtx.currentTime;
+      // noise buffer
+      const bufferSize = audioCtx.sampleRate * 0.13; // 30ms
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize / 8));
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
 
-// التعامل مع الضغط على مربع
-function handleClick(i) {
-  const current = history[step];
-  if (winnerInfo.winner || current[i]) return;
+      // filter to give warm thud
+      const band = audioCtx.createBiquadFilter();
+      band.type = 'bandpass';
+      band.frequency.value = 800;
+      band.Q.value = 0.8;
 
-  const newSquares = current.slice();
-  newSquares[i] = xIsNext ? 'X' : 'O';
-  history = history.slice(0, step + 1).concat([newSquares]);
-  step = history.length - 1;
-  xIsNext = !xIsNext;
-  winnerInfo = calculateWinner(history[step]);
-  render();
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
 
-  // لو مفعل اللعب ضد الكمبيوتر و دور الكمبيوتر الآن -> حركة AI
-  if (playAgainstAI && !winnerInfo.winner && !xIsNext) {
-    setTimeout(() => aiMove(), 300);
-  }
-}
+      noise.connect(band);
+      band.connect(gain);
+      gain.connect(audioCtx.destination);
 
-// العودة إلى حركة سابقة
-function jumpTo(move) {
-  step = move;
-  xIsNext = (step % 2 === 0);
-  winnerInfo = calculateWinner(history[step]);
-  render();
-}
-
-// إعادة اللعب
-function restart() {
-  history = [Array(9).fill('')];
-  step = 0;
-  xIsNext = true;
-  winnerInfo = {winner: '', line: null};
-  render();
-}
-
-// حركة بسيطة للـ AI (يحاول يفوز أو يصدّ X، وإلا يلعب منتصف أو ركن أو عشوائي)
-function aiMove() {
-  const current = history[step].slice();
-  const emptyIndexes = current.map((v,i)=>v?null:i).filter(v=>v!==null);
-
-  function findWinningMove(sym) {
-    for (const idx of emptyIndexes) {
-      const tmp = current.slice();
-      tmp[idx] = sym;
-      const calc = calculateWinner(tmp);
-      if (calc.winner === sym) return idx;
+      noise.start(now);
+      noise.stop(now + 0.06);
     }
-    return null;
-  }
 
-  let move = findWinningMove('O');    // حاول يفوز
-  if (move === null) move = findWinningMove('X'); // امنع X
-  if (move === null && current[4] === '') move = 4; // خذ النص
-  const corners = [0,2,6,8].filter(i=>current[i]==='');
-  if (move === null && corners.length) move = corners[Math.floor(Math.random()*corners.length)];
-  if (move === null && emptyIndexes.length) move = emptyIndexes[Math.floor(Math.random()*emptyIndexes.length)];
+    /* short celebratory melody */
+    function playWinSound() {
+      if (!soundsEnabled) return;
+      ensureAudio();
+      if (!audioCtx) return;
 
-  if (move !== null) {
-    handleClick(move);
-  }
-}
+      const now = audioCtx.currentTime;
+      // small reverb using delay+feedback
+      const delay = audioCtx.createDelay();
+      delay.delayTime.value = 0.06;
+      const fb = audioCtx.createGain();
+      fb.gain.value = 0.35;
+      delay.connect(fb);
+      fb.connect(delay);
 
-// تهيئة الواجهة
-createBoardButtons();
-render();
+      const master = audioCtx.createGain();
+      master.gain.value = 0.9;
+      delay.connect(master);
+      master.connect(audioCtx.destination);
 
-// أحداث الأزرار
-restartBtn.addEventListener('click', restart);
-aiBtn.addEventListener('click', () => {
-  playAgainstAI = !playAgainstAI;
-  aiBtn.textContent = playAgainstAI ? 'أوقف الكمبيوتر' : 'العب مع الكمبيوتر (ساهل)';
-  // لو فعلناه ودور الكمبيوتر الآن نفّذ حركة
-  if (playAgainstAI && !xIsNext && !winnerInfo.winner) setTimeout(aiMove, 300);
-});
+      const seq = [880, 660, 990]; // frequencies (A5-ish, E5-ish, B5-ish) — joyful
+      seq.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, now + i * 0.12);
+        g.gain.exponentialRampToValueAtTime(0.28, now + i * 0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.18);
+        osc.connect(g);
+        g.connect(delay);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 0.22);
+      });
 
-// اختصارات: Ctrl/Cmd+Z للتراجع خطوة
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-    if (step > 0) jumpTo(step - 1);
-  }
-});
-</script>
+      // short sub-bass thump
+      const bass = audioCtx.createOscillator();
+      const bg = audioCtx.createGain();
+      bass.type = 'triangle';
+      bass.frequency.value = 110;
+      bg.gain.setValueAtTime(0.0001, now);
+      bg.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+      bg.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+      bass.connect(bg);
+      bg.connect(audioCtx.destination);
+      bass.start(now);
+      bass.stop(now + 0.2);
+    }
+
+    /* speak a Sudanese phrase using SpeechSynthesis (if available) */
+    function speakSudanese(text) {
+      if (!soundsEnabled) return;
+      if (!('speechSynthesis' in window)) return;
+      // choose Arabic voice if available
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'ar';
+      // try to pick an Arabic voice (may vary per device)
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length) {
+        const ar = voices.find(v => v.lang && v.lang.startsWith('ar'));
+        if (ar) utter.voice = ar;
+      }
+      // short and lively
+      utter.rate = 1.05;
+      utter.pitch = 1.05;
+      window.speechSynthesis.cancel(); // stop previous
+      window.speechSynthesis.speak(utter);
+    }
+
+    /* ---- SVG helpers (X/O) ---- */
+    function svgX() {
+      return `
+    <svg class="xo placed" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <line class="x-line" x1="20" y1="20" x2="80" y2="80"></line>
+      <line class="x-line" x1="80" y1="20" x2="20" y2="80"></line>
+    </svg>`;
+    }
+    function svgO() {
+      return `
+    <svg class="xo placed" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle class="o-ring" cx="50" cy="50" r="30"></circle>
+    </svg>`;
+    }
+
+    function createBoardButtons() {
+      boardEl.innerHTML = '';
+      for (let i = 0; i < 9; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'square';
+        btn.setAttribute('data-i', i);
+        btn.setAttribute('aria-label', `مربع ${i + 1}`);
+        btn.addEventListener('click', () => handleClick(i));
+        btn.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleClick(i); } });
+        boardEl.appendChild(btn);
+      }
+    }
+
+    function calculateWinner(sq) {
+      const lines = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [0, 3, 6], [1, 4, 7], [2, 5, 8], [0, 4, 8], [2, 4, 6]];
+      for (const [a, b, c] of lines) {
+        if (sq[a] && sq[a] === sq[b] && sq[a] === sq[c]) {
+          return { winner: sq[a], line: [a, b, c] };
+        }
+      }
+      return { winner: '', line: null };
+    }
+
+    function render() {
+      const current = history[step];
+      const buttons = boardEl.querySelectorAll('.square');
+      buttons.forEach((btn, i) => {
+        btn.classList.remove('winning', 'pressed');
+        btn.innerHTML = '';
+        if (current[i]) {
+          btn.innerHTML = current[i] === 'X' ? svgX() : svgO();
+        }
+      });
+
+      if (winnerInfo.line) {
+        winnerInfo.line.forEach(idx => {
+          const el = boardEl.querySelector(`button[data-i="${idx}"]`);
+          if (el) el.classList.add('winning');
+        });
+      }
+
+      let status = '';
+      if (winnerInfo.winner) {
+        const raw = funnyWinner[step % funnyWinner.length];
+        const wName = winnerInfo.winner === 'X' ? 'إكس (X)' : 'أو (O)';
+        status = raw.replace('{w}', wName);
+      } else if (current.every(Boolean)) {
+        status = funnyDraw[step % funnyDraw.length];
+      } else {
+        status = xIsNext ? funnyNextX[step % funnyNextX.length] : funnyNextO[step % funnyNextO.length];
+      }
+      statusEl.textContent = status;
+
+      historyListEl.innerHTML = '';
+      history.forEach((_, move) => {
+        const li = document.createElement('div');
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.width = '100%';
+        btn.style.textAlign = 'right';
+        btn.textContent = move ? `يا عمو عبد ارجع لي ورا ${move} وابروما 😂` : 'وااي وااي وااي واااااااايي 🤣 ابداها لي من الأول';
+        btn.addEventListener('click', () => jumpTo(move));
+        li.appendChild(btn);
+        historyListEl.appendChild(li);
+      });
+    }
+
+    function handleClick(i) {
+      const current = history[step];
+      if (winnerInfo.winner || current[i]) return;
+
+      // ensure audio context created on first gesture
+      ensureAudio();
+
+      const newSquares = current.slice();
+      newSquares[i] = xIsNext ? 'X' : 'O';
+      history = history.slice(0, step + 1).concat([newSquares]);
+      step = history.length - 1;
+      xIsNext = !xIsNext;
+      winnerInfo = calculateWinner(history[step]);
+
+      // play move sound and optional short TTS "يا زول" whisper (kept short)
+      playMoveSound();
+
+      render();
+
+      // if someone won, play win sound + TTS
+      if (winnerInfo.winner) {
+        // short delay so visuals update first
+        setTimeout(() => {
+          playWinSound();
+          const raw = funnyWinner[step % funnyWinner.length];
+          const wName = winnerInfo.winner === 'X' ? 'إكس' : 'أو';
+          const phrase = raw.replace('{w}', wName);
+          // speak shorter, more natural phrase in Sudanese style
+          speakSudanese(phrase);
+        }, 120);
+      }
+
+      // AI move if enabled
+      if (playAgainstAI && !winnerInfo.winner && !xIsNext) {
+        setTimeout(() => aiMove(), 1500);
+      }
+    }
+
+    function jumpTo(move) {
+      step = move;
+      xIsNext = (step % 2 === 0);
+      winnerInfo = calculateWinner(history[step]);
+      render();
+    }
+
+    function restart() {
+      history = [Array(9).fill('')];
+      step = 0;
+      xIsNext = true;
+      winnerInfo = { winner: '', line: null };
+      render();
+    }
+
+    function aiMove() {
+      const current = history[step].slice();
+      const empty = current.map((v, i) => v ? null : i).filter(v => v !== null);
+
+      function findWinning(sym) {
+        for (const idx of empty) {
+          const tmp = current.slice();
+          tmp[idx] = sym;
+          const calc = calculateWinner(tmp);
+          if (calc.winner === sym) return idx;
+        }
+        return null;
+      }
+
+      let move = findWinning('O');
+      if (move === null) move = findWinning('X');
+      if (move === null && current[4] === '') move = 4;
+      const corners = [0, 2, 6, 8].filter(i => current[i] === '');
+      if (move === null && corners.length) move = corners[Math.floor(Math.random() * corners.length)];
+      if (move === null && empty.length) move = empty[Math.floor(Math.random() * empty.length)];
+
+      if (move !== null) handleClick(move);
+    }
+
+    /* init */
+    createBoardButtons();
+    render();
+
+    /* events */
+    restartBtn.addEventListener('click', restart);
+    aiBtn.addEventListener('click', () => {
+      playAgainstAI = !playAgainstAI;
+      aiBtn.textContent = playAgainstAI ? 'أوقف الكمبيوتر' : 'العب مع الكمبيوتر (كيشة)';
+      aiBtn.setAttribute('aria-pressed', String(playAgainstAI));
+      if (playAgainstAI && !xIsNext && !winnerInfo.winner) setTimeout(aiMove, 650);
+    });
+
+    soundBtn.addEventListener('click', () => {
+      soundsEnabled = !soundsEnabled;
+      soundBtn.textContent = soundsEnabled ? 'صوت: شغّال' : 'صوت: مطفي';
+      soundBtn.setAttribute('aria-pressed', String(soundsEnabled));
+      // ensure audio context unlocked on user gesture
+      if (soundsEnabled) ensureAudio();
+    });
+
+    /* keyboard shortcut: Ctrl/Cmd+Z */
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        if (step > 0) jumpTo(step - 1);
+      }
+    });
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.getVoices();
+    }
+  </script>
 </body>
+
 </html>
