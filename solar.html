@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>حساب منظومة الطاقة الشمسية</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+  --bg:#020617;
+  --card:#020617;
+  --accent:#06b6d4;
+  --danger:#ef4444;
+  --border:#1e293b;
+  --muted:#94a3b8;
+}
+
+body{
+  margin:0;
+  background:#0f172a;
+  font-family:system-ui,"Noto Naskh Arabic";
+  color:#e5e7eb;
+}
+
+.container{
+  max-width:1050px;
+  margin:20px auto;
+  padding:15px;
+}
+
+h1{text-align:center;margin-bottom:14px}
+
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.4);
+}
+
+.device{
+  display:grid;
+  grid-template-columns:1.4fr .7fr .6fr .6fr auto;
+  gap:10px;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+select,input[type=number]{
+  width:100%;
+  background:transparent;
+  border:1px solid var(--border);
+  color:#e5e7eb;
+  padding:8px;
+  border-radius:10px;
+  font-size:14px;
+}
+
+.hours-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:6px 4px;
+}
+
+.hours-col span{font-size:12px;color:var(--muted)}
+.hours-val{font-size:16px;font-weight:700}
+
+.btn-hour{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:none;
+  background:var(--accent);
+  color:#042027;
+  font-weight:900;
+  cursor:pointer;
+}
+
+.btn{
+  background:var(--accent);
+  color:#042027;
+  border:none;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.btn.del{background:var(--danger);color:#fff}
+
+.summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:10px;
+}
+
+.box{
+  background:#020617;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px;
+  text-align:center;
+}
+
+.small{font-size:12px;color:var(--muted)}
+.value{font-size:18px;font-weight:800}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>🎮حساب منظومة الطاقة الشمسية</h1>
+
+<div class="card">
+  <button class="btn" onclick="addDevice()">➕ إضافة جهاز</button>
+</div>
+
+<div class="card" id="devices"></div>
+
+<div class="card summary">
+  <div class="box">
+    <div class="small">القدرة اللحظية</div>
+    <div class="value" id="inst">0 W</div>
+  </div>
+  <div class="box">
+    <div class="small">الاستهلاك اليومي</div>
+    <div class="value" id="daily">0 Wh</div>
+  </div>
+  <div class="box">
+    <div class="small">الاستهلاك الليلي</div>
+    <div class="value" id="night">0 Wh</div>
+  </div>
+  <div class="box">
+    <div class="small">حجم البطارية (+20٪)</div>
+    <div class="value" id="battery">0 kWh</div>
+  </div>
+  <div class="box">
+    <div class="small">الانفيرتر المقترح</div>
+    <div class="value" id="inv">-</div>
+  </div>
+  <div class="box">
+    <div class="small">عدد الألواح (590W)</div>
+    <div class="value" id="panels">0</div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* كتالوج الأجهزة */
+const catalog={
+  "شاشة":150,
+  "ثلاجة":200,
+  "مروحة":70,
+  "مكيف نسمة":250,
+  "غسالة":600,
+  "لمبة":30,
+  "بلك":10,
+  "موتور 1\"":750
+};
+
+let devices=[];
+
+/* إضافة جهاز */
+function addDevice(){
+  devices.push({name:"شاشة",count:1,day:1,night:0});
+  render();
+}
+
+/* تغيير ساعات */
+function changeHour(i,type,delta){
+  devices[i][type]=Math.max(0,Math.min(12,devices[i][type]+delta));
+  render();
+  calc();
+}
+
+/* رسم الأجهزة */
+function render(){
+  const wrap=document.getElementById("devices");
+  wrap.innerHTML="";
+  devices.forEach((d,i)=>{
+    wrap.innerHTML+=`
+    <div class="device">
+      <select onchange="devices[${i}].name=this.value;calc()">
+        ${Object.keys(catalog).map(k=>
+          `<option ${k===d.name?"selected":""}>${k}</option>`
+        ).join("")}
+      </select>
+
+      <input type="number" min="1" value="${d.count}"
+        onchange="devices[${i}].count=parseInt(this.value||1);calc()">
+
+      <div class="hours-col">
+        <span>☀️ نهار</span>
+        <button class="btn-hour" onclick="changeHour(${i},'day',1)">+</button>
+        <div class="hours-val">${d.day}</div>
+        <button class="btn-hour" onclick="changeHour(${i},'day',-1)">−</button>
+      </div>
+
+      <div class="hours-col">
+        <span>🌙 ليل</span>
+        <button class="btn-hour" onclick="changeHour(${i},'night',1)">+</button>
+        <div class="hours-val">${d.night}</div>
+        <button class="btn-hour" onclick="changeHour(${i},'night',-1)">−</button>
+      </div>
+
+      <button class="btn del" onclick="devices.splice(${i},1);render();calc()">✖</button>
+    </div>
+    `;
+  });
+  calc();
+}
+
+/* اختيار الانفيرتر */
+function inverterSuggestion(watt){
+  if(watt < 800) return "انفيرتر 2.2 كيلو";
+  if(watt < 1800) return "انفيرتر 3.2 كيلو";
+  if(watt < 3300) return "انفيرتر 4.2 كيلو";
+  if(watt < 4800) return "انفيرتر 6.2 كيلو";
+  if(watt < 5800) return "انفيرتر 8.2 كيلو";
+  if(watt < 7800) return "انفيرتر 10.2 كيلو";
+  return "⚠️ يرجى التواصل مع مهندس المنظومة أولاً";
+}
+
+/* الحسابات */
+function calc(){
+  let inst=0,daily=0,nightWh=0;
+
+  devices.forEach(d=>{
+    const watt=catalog[d.name]*d.count;
+    inst+=watt;
+    daily+=watt*(d.day+d.night);
+    nightWh+=watt*d.night;
+  });
+
+  const batteryKwh=(nightWh*1.2)/1000;
+
+  document.getElementById("inst").innerText=inst+" W";
+  document.getElementById("daily").innerText=daily+" Wh";
+  document.getElementById("night").innerText=nightWh+" Wh";
+  document.getElementById("battery").innerText=batteryKwh.toFixed(2)+" kWh";
+  document.getElementById("inv").innerText=inverterSuggestion(inst);
+  document.getElementById("panels").innerText=Math.ceil(daily/(590*8*0.8));
+}
+
+/* تهيئة */
+addDevice();
+</script>
+
+</body>
+</html>
